@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>لعبة الحساب الذهني للأطفال 🧮</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts - Tajawal -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800;900&display=swap" rel="stylesheet">
+    <!-- Tone.js for Audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
+            min-height: 100vh;
+        }
+
+        .pop-btn {
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .pop-btn:active {
+            transform: scale(0.92);
+        }
+
+        .card-bounce {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .pulse-star {
+            animation: pulse-star 1.5s infinite;
+        }
+        @keyframes pulse-star {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .correct-anim {
+            animation: correctFlash 0.5s ease;
+        }
+        @keyframes correctFlash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); background-color: #22c55e; }
+            100% { transform: scale(1); }
+        }
+
+        .wrong-anim {
+            animation: wrongShake 0.4s ease;
+        }
+        @keyframes wrongShake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between items-center p-3 md:p-6 text-white min-h-screen">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-md flex justify-between items-center bg-white/20 backdrop-blur-md p-3 rounded-2xl border-2 border-white/30 shadow-lg">
+        <!-- Score -->
+        <div class="flex items-center gap-2">
+            <span class="text-3xl pulse-star">⭐</span>
+            <div class="flex flex-col">
+                <span class="text-xs text-yellow-200 font-bold">النقاط</span>
+                <span id="score" class="text-2xl font-extrabold text-yellow-300">0</span>
+            </div>
+        </div>
+
+        <!-- Level Indicator -->
+        <div class="bg-yellow-400 text-purple-950 font-black px-4 py-1.5 rounded-full text-sm shadow-md flex items-center gap-1">
+            <i class="fas fa-medal"></i>
+            <span id="levelBadgeText">المستوى 1 🥉</span>
+        </div>
+
+        <!-- Mute/Sound Toggle -->
+        <button id="soundToggle" class="bg-white/30 hover:bg-white/40 p-2.5 rounded-xl text-xl text-white pop-btn">
+            <i class="fas fa-volume-up"></i>
+        </button>
+    </header>
+
+    <!-- Main Game Display -->
+    <main class="w-full max-w-md my-auto py-4">
+        
+        <!-- Welcome Screen -->
+        <div id="startScreen" class="bg-white/95 text-slate-800 rounded-3xl p-6 shadow-2xl text-center border-4 border-yellow-400 flex flex-col items-center">
+            <div class="text-6xl mb-3 card-bounce">🦊</div>
+            <h1 class="text-3xl font-black text-purple-700 mb-2">عبقري الحساب الصغير</h1>
+            <p class="text-slate-600 font-bold text-sm mb-4 leading-relaxed">
+                اجمع النقاط وانتقل عبر المستويات الثلاثة لتصبح البطل العبقري! 🏆✨
+            </p>
+
+            <div class="w-full bg-purple-50 p-3 rounded-2xl mb-5 text-xs text-purple-800 font-bold flex flex-col gap-1 border border-purple-200">
+                <span>🥉 المستوى 1: (الأرقام 1 - 5)</span>
+                <span>🥈 المستوى 2: 50 نقطة (الأرقام 1 - 10)</span>
+                <span>🥇 المستوى 3: 100 نقطة (الأرقام 1 - 20)</span>
+            </div>
+
+            <!-- Mode Selector -->
+            <div class="w-full gap-2 grid grid-cols-3 mb-6">
+                <button onclick="setMode('add')" id="modeAdd" class="mode-btn pop-btn py-3 bg-purple-600 text-white font-bold rounded-2xl border-b-4 border-purple-800 shadow">
+                    جمع ➕
+                </button>
+                <button onclick="setMode('sub')" id="modeSub" class="mode-btn pop-btn py-3 bg-slate-200 text-slate-700 font-bold rounded-2xl border-b-4 border-slate-300">
+                    طرح ➖
+                </button>
+                <button onclick="setMode('mix')" id="modeMix" class="mode-btn pop-btn py-3 bg-slate-200 text-slate-700 font-bold rounded-2xl border-b-4 border-slate-300">
+                    مشكل 🔀
+                </button>
+            </div>
+
+            <button onclick="startGame()" class="pop-btn w-full py-4 bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white font-black text-2xl rounded-2xl shadow-xl border-b-4 border-green-700 flex items-center justify-center gap-3">
+                <span>ابدأ اللعب</span>
+                <i class="fas fa-play text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Question Card Screen -->
+        <div id="gameScreen" class="hidden flex flex-col items-center">
+            
+            <!-- Character & Progress Bar -->
+            <div class="w-full mb-3 px-1">
+                <div class="flex justify-between items-center mb-1.5 px-1">
+                    <div class="flex items-center gap-2 bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                        <span class="text-lg">🔥</span>
+                        <span id="streakText" class="text-xs font-bold text-yellow-300">متتالي: 0</span>
+                    </div>
+                    <span id="progressText" class="text-xs font-bold text-yellow-200">التقدم للمستوى التالي: 0/50</span>
+                </div>
+                <!-- Progress Bar Track -->
+                <div class="w-full bg-black/20 h-3 rounded-full overflow-hidden p-0.5 border border-white/20">
+                    <div id="progressBar" class="bg-gradient-to-r from-yellow-300 to-amber-400 h-full rounded-full transition-all duration-300" style="w-0%"></div>
+                </div>
+            </div>
+
+            <!-- Problem Box -->
+            <div id="problemCard" class="w-full bg-white text-slate-800 rounded-3xl p-6 shadow-2xl border-4 border-purple-400 text-center relative mb-6">
+                <div class="flex justify-between items-center mb-1">
+                    <span id="levelCardTitle" class="text-xs font-extrabold text-purple-500 uppercase tracking-widest">المستوى الأول 🥉</span>
+                    <span id="modeTag" class="text-xs font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md">جمع ➕</span>
+                </div>
+                <div id="questionText" class="text-5xl md:text-6xl font-black text-purple-900 tracking-wider dir-ltr my-2">
+                    3 + 2 = ?
+                </div>
+                <!-- Visual Items Container for Kids -->
+                <div id="visualCounter" class="flex flex-wrap justify-center gap-2 mt-4 pt-3 border-t-2 border-slate-100 min-h-[50px]">
+                    <!-- Generated Emojis for Visual Counting -->
+                </div>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="optionsGrid" class="w-full grid grid-cols-2 gap-4">
+                <!-- Options generated by JS -->
+            </div>
+        </div>
+
+        <!-- Feedback Modal -->
+        <div id="feedbackBox" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-3xl p-6 text-center max-w-xs w-full shadow-2xl border-4 border-yellow-400">
+                <div id="feedbackEmoji" class="text-6xl mb-2">🎉</div>
+                <h2 id="feedbackTitle" class="text-2xl font-black text-purple-800 mb-1">أحسنت يا بطل!</h2>
+                <p id="feedbackSub" class="text-slate-600 font-bold mb-4 text-sm">إجابة صحيحة وممتازة</p>
+                <button onclick="nextQuestion()" class="pop-btn w-full py-3 bg-purple-600 text-white font-bold rounded-2xl shadow-lg border-b-4 border-purple-800">
+                    المسألة التالية ➡️
+                </button>
+            </div>
+        </div>
+
+        <!-- Level Up Modal -->
+        <div id="levelUpBox" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+            <div class="bg-white rounded-3xl p-6 text-center max-w-xs w-full shadow-2xl border-4 border-yellow-400 animate-bounce">
+                <div class="text-7xl mb-2">🏆</div>
+                <h2 id="levelUpTitle" class="text-3xl font-black text-yellow-500 mb-1">ترقية مستوى!</h2>
+                <p id="levelUpSub" class="text-purple-900 font-black text-lg mb-4">انتقلت إلى المستوى الثاني! 🥈</p>
+                <button onclick="closeLevelUp()" class="pop-btn w-full py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-purple-950 font-black text-xl rounded-2xl shadow-lg border-b-4 border-amber-700">
+                    واصل التحدي 💪
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer Credit -->
+    <footer class="text-center text-xs text-purple-200 font-bold opacity-80 py-2">
+        لعبة الحساب الذهني التفاعلية 🎈 متدرجة المستويات (1-3)
+    </footer>
+
+    <script>
+        // Audio Engine setup
+        let soundEnabled = true;
+        let correctSynth, wrongSynth, clickSynth, levelUpSynth;
+
+        function initAudio() {
+            try {
+                correctSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                correctSynth.volume.value = -8;
+
+                wrongSynth = new Tone.MembraneSynth().toDestination();
+                wrongSynth.volume.value = -6;
+
+                clickSynth = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 }
+                }).toDestination();
+
+                levelUpSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                levelUpSynth.volume.value = -4;
+            } catch(e){}
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                if (type === 'correct') {
+                    correctSynth.triggerAttackRelease(["C5", "E5", "G5"], "8n");
+                } else if (type === 'wrong') {
+                    wrongSynth.triggerAttackRelease("G2", "4n");
+                } else if (type === 'click') {
+                    clickSynth.triggerAttackRelease("C6", "16n");
+                } else if (type === 'levelup') {
+                    levelUpSynth.triggerAttackRelease(["C4", "E4", "G4", "C5", "E5", "G5"], "4n");
+                }
+            } catch(e){}
+        }
+
+        // Toggle Sound
+        const soundBtn = document.getElementById('soundToggle');
+        soundBtn.addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            soundBtn.innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
+            soundBtn.classList.toggle('opacity-50', !soundEnabled);
+        });
+
+        // Game Logic State
+        let selectedMode = 'add'; // 'add', 'sub', 'mix'
+        let currentScore = 0;
+        let currentLevel = 1; // 1, 2, 3
+        let streak = 0;
+        let currentAnswer = 0;
+        let isAnsweringAllowed = true;
+
+        const visualEmojis = ['🍎', '🎈', '⭐', '🐱', '🚗', '🍓', '🧸', '🍪', '🚀'];
+
+        function setMode(mode) {
+            selectedMode = mode;
+            playSound('click');
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.className = "mode-btn pop-btn py-3 bg-slate-200 text-slate-700 font-bold rounded-2xl border-b-4 border-slate-300";
+            });
+
+            const activeBtn = mode === 'add' ? 'modeAdd' : mode === 'sub' ? 'modeSub' : 'modeMix';
+            document.getElementById(activeBtn).className = "mode-btn pop-btn py-3 bg-purple-600 text-white font-bold rounded-2xl border-b-4 border-purple-800 shadow";
+        }
+
+        function startGame() {
+            initAudio();
+            playSound('click');
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.remove('hidden');
+            currentScore = 0;
+            currentLevel = 1;
+            streak = 0;
+            updateScoreUI();
+            generateQuestion();
+        }
+
+        function updateLevelState() {
+            let previousLevel = currentLevel;
+
+            // Level Thresholds:
+            // Level 1: 0 to 40
+            // Level 2: 50 to 90
+            // Level 3: 100+
+            if (currentScore >= 100) {
+                currentLevel = 3;
+            } else if (currentScore >= 50) {
+                currentLevel = 2;
+            } else {
+                currentLevel = 1;
+            }
+
+            // Check if level increased!
+            if (currentLevel > previousLevel) {
+                showLevelUpModal();
+            }
+        }
+
+        function generateQuestion() {
+            isAnsweringAllowed = true;
+            let num1, num2, operator;
+            let currentOp = selectedMode;
+
+            if (selectedMode === 'mix') {
+                currentOp = Math.random() < 0.5 ? 'add' : 'sub';
+            }
+
+            document.getElementById('modeTag').innerText = currentOp === 'add' ? 'جمع ➕' : 'طرح ➖';
+
+            // Define difficulty boundaries per level
+            let maxNumber = 5;
+            if (currentLevel === 2) maxNumber = 10;
+            if (currentLevel === 3) maxNumber = 20;
+
+            if (currentOp === 'add') {
+                if (currentLevel === 1) {
+                    num1 = Math.floor(Math.random() * 3) + 1; // 1 to 3
+                    num2 = Math.floor(Math.random() * 2) + 1; // 1 to 2
+                } else if (currentLevel === 2) {
+                    num1 = Math.floor(Math.random() * 6) + 1; // 1 to 6
+                    num2 = Math.floor(Math.random() * (10 - num1)) + 1; // max sum 10
+                } else { // Level 3
+                    num1 = Math.floor(Math.random() * 10) + 1;
+                    num2 = Math.floor(Math.random() * 10) + 1; // max sum 20
+                }
+                currentAnswer = num1 + num2;
+                operator = '+';
+            } else {
+                // Subtraction
+                if (currentLevel === 1) {
+                    num1 = Math.floor(Math.random() * 4) + 2; // 2 to 5
+                    num2 = Math.floor(Math.random() * (num1 - 1)) + 1;
+                } else if (currentLevel === 2) {
+                    num1 = Math.floor(Math.random() * 6) + 5; // 5 to 10
+                    num2 = Math.floor(Math.random() * num1) + 1;
+                } else { // Level 3
+                    num1 = Math.floor(Math.random() * 10) + 10; // 10 to 20
+                    num2 = Math.floor(Math.random() * 9) + 1;
+                }
+                currentAnswer = num1 - num2;
+                operator = '-';
+            }
+
+            // Update Question Text
+            document.getElementById('questionText').innerText = `${num1} ${operator} ${num2} = ?`;
+
+            // Render Visual Aids (Enabled for Level 1 & 2, compact for level 3)
+            renderVisualAid(num1, num2, operator);
+
+            // Generate 4 Options (including 1 correct)
+            let options = [currentAnswer];
+            let maxOptionVal = currentLevel === 1 ? 6 : currentLevel === 2 ? 11 : 21;
+
+            while (options.length < 4) {
+                let wrongOpt = Math.floor(Math.random() * maxOptionVal);
+                if (!options.includes(wrongOpt)) {
+                    options.push(wrongOpt);
+                }
+            }
+            // Shuffle Options
+            options.sort(() => Math.random() - 0.5);
+
+            // Display Options
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = '';
+            const bgColors = [
+                'from-pink-500 to-rose-600 border-rose-700',
+                'from-blue-500 to-cyan-600 border-cyan-700',
+                'from-amber-400 to-orange-500 border-orange-600',
+                'from-emerald-400 to-teal-600 border-teal-700'
+            ];
+
+            options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `pop-btn py-5 text-4xl font-black text-white bg-gradient-to-b ${bgColors[idx % 4]} rounded-3xl border-b-4 shadow-xl flex items-center justify-center`;
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function renderVisualAid(num1, num2, op) {
+            const container = document.getElementById('visualCounter');
+            container.innerHTML = '';
+            
+            // For level 3 with large numbers, render simplified counter if num > 10
+            if (num1 > 10 || num2 > 10) {
+                container.innerHTML = `<span class="text-sm font-bold text-slate-500">فكر وقم بحل المسألة زهنياً 🧠⚡</span>`;
+                return;
+            }
+
+            const emoji = visualEmojis[Math.floor(Math.random() * visualEmojis.length)];
+
+            if (op === '+') {
+                let g1 = document.createElement('div');
+                g1.className = 'flex flex-wrap gap-1 bg-purple-50 p-1.5 rounded-xl border border-purple-200';
+                for(let i=0; i<num1; i++) g1.innerHTML += `<span class="text-lg md:text-xl">${emoji}</span>`;
+
+                let plusSign = document.createElement('span');
+                plusSign.className = 'text-xl font-bold text-purple-600 self-center px-1';
+                plusSign.innerText = '+';
+
+                let g2 = document.createElement('div');
+                g2.className = 'flex flex-wrap gap-1 bg-purple-50 p-1.5 rounded-xl border border-purple-200';
+                for(let i=0; i<num2; i++) g2.innerHTML += `<span class="text-lg md:text-xl">${emoji}</span>`;
+
+                container.appendChild(g1);
+                container.appendChild(plusSign);
+                container.appendChild(g2);
+            } else {
+                let g = document.createElement('div');
+                g.className = 'flex flex-wrap justify-center gap-1 bg-pink-50 p-1.5 rounded-xl border border-pink-200';
+
+                for(let i=0; i<num1; i++) {
+                    if (i >= (num1 - num2)) {
+                        g.innerHTML += `<span class="text-lg md:text-xl opacity-30 relative line-through">${emoji}</span>`;
+                    } else {
+                        g.innerHTML += `<span class="text-lg md:text-xl">${emoji}</span>`;
+                    }
+                }
+                container.appendChild(g);
+            }
+        }
+
+        function checkAnswer(selectedOpt, btnElement) {
+            if (!isAnsweringAllowed) return;
+            isAnsweringAllowed = false;
+
+            const card = document.getElementById('problemCard');
+
+            if (selectedOpt === currentAnswer) {
+                // Correct Answer
+                playSound('correct');
+                currentScore += 10;
+                streak++;
+                
+                updateLevelState();
+                updateScoreUI();
+
+                card.classList.add('correct-anim');
+                btnElement.classList.add('bg-green-500');
+
+                setTimeout(() => {
+                    card.classList.remove('correct-anim');
+                    if (currentScore !== 50 && currentScore !== 100) {
+                        showFeedback(true);
+                    }
+                }, 500);
+
+            } else {
+                // Wrong Answer
+                playSound('wrong');
+                streak = 0;
+                updateScoreUI();
+
+                card.classList.add('wrong-anim');
+                btnElement.classList.add('opacity-40');
+
+                setTimeout(() => {
+                    card.classList.remove('wrong-anim');
+                    showFeedback(false);
+                }, 500);
+            }
+        }
+
+        function updateScoreUI() {
+            document.getElementById('score').innerText = currentScore;
+            document.getElementById('streakText').innerText = `متتالي: ${streak} 🔥`;
+
+            // Level UI Updates
+            const levelNames = ['المستوى 1 🥉', 'المستوى 2 🥈', 'المستوى 3 🥇'];
+            const levelCardTitles = ['المستوى الأول 🥉', 'المستوى الثاني 🥈', 'المستوى الثالث 🥇'];
+            
+            document.getElementById('levelBadgeText').innerText = levelNames[currentLevel - 1];
+            document.getElementById('levelCardTitle').innerText = levelCardTitles[currentLevel - 1];
+
+            // Progress bar Calculation
+            let target = currentLevel === 1 ? 50 : currentLevel === 2 ? 100 : 100;
+            let percent = Math.min(100, (currentScore / target) * 100);
+            
+            if (currentLevel === 3) {
+                document.getElementById('progressText').innerText = `المستوى الأقصى 🌟 (${currentScore} نقطة)`;
+                document.getElementById('progressBar').style.width = '100%';
+            } else {
+                document.getElementById('progressText').innerText = `التقدم للمستوى التالي: ${currentScore}/${target}`;
+                document.getElementById('progressBar').style.width = `${percent}%`;
+            }
+        }
+
+        function showFeedback(isCorrect) {
+            const modal = document.getElementById('feedbackBox');
+            const title = document.getElementById('feedbackTitle');
+            const sub = document.getElementById('feedbackSub');
+            const emoji = document.getElementById('feedbackEmoji');
+
+            if (isCorrect) {
+                const wins = ['أحسنت يا بطل! 🌟', 'إجابة رائعة! 🎉', 'ممتاز جداً! 👏', 'ذكاء خارق! 🦊'];
+                emoji.innerText = '🥳';
+                title.innerText = wins[Math.floor(Math.random() * wins.length)];
+                title.className = "text-2xl font-black text-green-600 mb-1";
+                sub.innerText = `حصلت على +10 نقاط! مجموعك: ${currentScore}`;
+            } else {
+                emoji.innerText = '💡';
+                title.innerText = 'حاول مرة أخرى!';
+                title.className = "text-2xl font-black text-amber-600 mb-1";
+                sub.innerText = `الإجابة الصحيحة كانت (${currentAnswer})`;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function showLevelUpModal() {
+            playSound('levelup');
+            const levelUpBox = document.getElementById('levelUpBox');
+            const subText = document.getElementById('levelUpSub');
+
+            if (currentLevel === 2) {
+                subText.innerText = 'أحسنت! انتقلت إلى المستوى الثاني! 🥈\n(الأرقام تصبح حتى 10)';
+            } else if (currentLevel === 3) {
+                subText.innerText = 'رائع جداً! أنت الآن في المستوى الثالث! 🥇\n(تحدي العباقرة الأخير حتى 20)';
+            }
+
+            levelUpBox.classList.remove('hidden');
+        }
+
+        function closeLevelUp() {
+            playSound('click');
+            document.getElementById('levelUpBox').classList.add('hidden');
+            generateQuestion();
+        }
+
+        function nextQuestion() {
+            playSound('click');
+            document.getElementById('feedbackBox').classList.add('hidden');
+            generateQuestion();
+        }
+    </script>
+</body>
+</html>
